@@ -312,3 +312,4 @@ void BinTreeRebalance(BINTREE *tree, Boolean force)
 #ifdef __cplusplus
 } // end extern "C"
 #endif
+

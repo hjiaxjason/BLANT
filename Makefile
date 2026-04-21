@@ -25,23 +25,35 @@ all:
 	@if [ -f do-not-make ]; then echo "not making; assuming they already exist"; ls -l libwayne*.a; else /bin/rm -f *.a; $(MAKE) libwayne_all; fi
 	$(MAKE) testlib
 
+# Safe to call whenever a previous full make call has succeeded, call this after a source file has changed.
+incremental:
+	cd src; $(MAKE) -f Makefile.incremental
+
+# Run 'make watch' in a separate terminal for auto-recompilation 
+watch:
+	ls src/*.c include/*.h | entr $(MAKE) incremental
+
 libwayne_all: parallel
-	/bin/rm -f *.a
+	/bin/rm -f *.a src/*.a
 	$(CC) -o bin/intSizes intSizes.c && ./bin/intSizes > include/intSizes.h
+
+	mkdir -p build/libwayne-pg-g build/libwayne-pg build/libwayne-pg-nd build/libwayne-g build/libwayne build/libwayne-nd
+
 	# Make the pg versions (for profiling)
-	$(MAKE) debug_clean
-	$(MAKE) -j$(CORES) 'PG=-pg' debug && mv libwayne-g.a src/libwayne-pg-g/libwayne-pg-g.a
-	$(MAKE) opt_clean
-	$(MAKE) -j$(CORES) 'PG=-pg' opt && mv libwayne.a src/libwayne-pg/libwayne-pg.a
-	$(MAKE) ndebug_clean
-	$(MAKE) -j$(CORES) 'PG=-pg' ndebug && mv libwayne-nd.a src/libwayne-pg/libwayne-pg-nd.a
+	# Profiling with debug
+	$(MAKE) -j$(CORES) 'PG=-pg' 'OBJDIR=../build/libwayne-pg-g' debug && mv libwayne-g.a src/libwayne-pg-g/libwayne-pg-g.a
+	# Profiling optimized
+	$(MAKE) -j$(CORES) 'PG=-pg' 'OBJDIR=../build/libwayne-pg' opt && mv libwayne.a src/libwayne-pg/libwayne-pg.a
+	# Profiling with debug off
+	$(MAKE) -j$(CORES) 'PG=-pg' 'OBJDIR=../build/libwayne-pg-nd' ndebug && mv libwayne-nd.a src/libwayne-pg/libwayne-pg-nd.a
+	
 	# Make the non-pg versions (no profiling)
-	$(MAKE) debug_clean
-	$(MAKE) -j$(CORES) debug && mv libwayne-g.a src/libwayne-g/libwayne-g.a
-	$(MAKE) opt_clean
-	$(MAKE) -j$(CORES) opt && mv libwayne.a src/libwayne/libwayne.a
-	$(MAKE) ndebug_clean
-	$(MAKE) -j$(CORES) ndebug && mv libwayne-nd.a src/libwayne/libwayne-nd.a
+	# Debug
+	$(MAKE) -j$(CORES) 'OBJDIR=../build/libwayne-g' debug && mv libwayne-g.a src/libwayne-g/libwayne-g.a
+	# Optimized - default
+	$(MAKE) -j$(CORES) 'OBJDIR=../build/libwayne' opt && mv libwayne.a src/libwayne/libwayne.a
+	# Debug off
+	$(MAKE) -j$(CORES) 'OBJDIR=../build/libwayne-nd' ndebug && mv libwayne-nd.a src/libwayne/libwayne-nd.a
 	cp src/libwayne*/*.a src && cp src/*.a .
 
 parallel: parallel.c
@@ -68,7 +80,7 @@ ndebug:
 libwayne:
 	$(MAKE) $(LIBOUT)
 	# add misc.o below since adding nothing fails on Mac M1, and misc.o is pretty much necessary for libwayne to work.
-	[ "$(UNAME)" = Darwin ] || ar r $(LIBOUT) src/misc.o
+	[ "$(UNAME)" = Darwin ] || ar r $(LIBOUT) build/$(notdir $(OBJDIR))/misc.o
 
 debug_clean:
 	@$(MAKE) 'GDB=-ggdb' 'DEBUG=-DDEBUG=1' 'LIBOUT=libwayne-g.a' raw_clean
@@ -86,6 +98,8 @@ raw_clean:
 
 clean:
 	rm -f make-successful
+	rm -rf build
+# @/src/rm -f libwayne/*.o libwayne-g/*.o libwayne-pg/*.o libwayne-pg-g/*.o
 	@# The following is meant to remove the non-Windows binary, ie stats but not stats.exe.
 	@/bin/rm -f bin/stats bin/raw_hashmap bin/hash
 	@/bin/rm -f *.a
@@ -96,5 +110,8 @@ $(LIBOUT): src/$(LIBOUT)
 	if ranlib src/$(LIBOUT); then :; else echo "ranlib failed but it's not crucial" >&2; fi
 	cp -p src/$(LIBOUT) .
 
+.PHONY: src/$(LIBOUT)
 src/$(LIBOUT):
-	cd src; $(MAKE) -f Makefile.all 'CC=$(CC)' 'LIBOUT=$(LIBOUT)' 'GDB=$(GDB)' '$(LIBOUT)'
+	cd src; $(MAKE) -f Makefile.all 'CC=$(CC)' 'LIBOUT=$(LIBOUT)' 'GDB=$(GDB)' 'OBJDIR=$(OBJDIR)' '$(LIBOUT)'
+
+#.PHONY: libwayne-pg-g src/$(LIBOUT)
