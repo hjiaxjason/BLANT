@@ -537,3 +537,4 @@ void BitvecPrint(BITVEC *A)
 #ifdef __cplusplus
 } // end extern "C"
 #endif
+

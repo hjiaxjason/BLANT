@@ -1213,3 +1213,4 @@ Boolean GraphsIsomorphic(int *perm, GRAPH *G1, GRAPH *G2)
 #ifdef __cplusplus
 } // end extern "C"
 #endif
+

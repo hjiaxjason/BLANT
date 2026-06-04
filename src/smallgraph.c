@@ -519,3 +519,4 @@ Boolean SmallGraphsIsomorphic(int *perm, SMALL_GRAPH *G1, SMALL_GRAPH *G2)
 
 
 
+
