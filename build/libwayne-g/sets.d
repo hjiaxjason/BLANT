@@ -1,0 +1,6 @@
+../build/libwayne-g/sets.o: sets.c ../include/sets.h ../include/misc.h \
+  ../include/intSizes.h ../include/bitvec.h
+../include/sets.h:
+../include/misc.h:
+../include/intSizes.h:
+../include/bitvec.h:

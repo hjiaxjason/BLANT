@@ -69,7 +69,7 @@ libwayne_one:
 		'LIBOUT=$(VARIANT).a' \
 		libwayne
 	/bin/rm -f src/$(VARIANT).a
-	cd src && for o in ../build/$(VARIANT)/*.o; do touch $$(basename $$o); done
+	mkdir -p build/.stamps && for o in build/$(VARIANT)/*.o; do touch build/.stamps/$$(basename $${o%.o}).stamp; done
 
 parallel: parallel.c
 	$(CC) -o bin/parallel parallel.c
@@ -117,7 +117,7 @@ clean:
 	@/bin/rm -rf src/libwayne*/
 	@# The following is meant to remove the non-Windows binary, ie stats but not stats.exe.
 	@/bin/rm -f bin/stats bin/raw_hashmap bin/hash
-	@/bin/rm -f *.a src/*.a src/*.o
+	@/bin/rm -f *.a src/*.a
 	@$(MAKE) debug_clean
 	@$(MAKE) opt_clean
 
